@@ -2,8 +2,14 @@
  * Security utilities for input validation, sanitization, and AI payload verification.
  */
 
-const ALLOWED_EVENT_TYPES = ['wedding', 'birthday', 'community'];
+export const ALLOWED_EVENT_TYPES = ['wedding', 'birthday', 'community'];
 
+/**
+ * Strips HTML tags, ASCII control characters, and leading/trailing whitespace.
+ * @param {unknown} value - Raw string input
+ * @param {number} [maxLength=200] - Truncation limit
+ * @returns {string} Sanitized string
+ */
 export function sanitizeText(value, maxLength = 200) {
   if (typeof value !== 'string') {
     return '';
@@ -12,6 +18,11 @@ export function sanitizeText(value, maxLength = 200) {
   return cleaned.trim().slice(0, maxLength);
 }
 
+/**
+ * Validates that budget input is a finite integer within realistic bounds.
+ * @param {unknown} rawBudget
+ * @returns {{ valid: boolean, value: number, error?: string }}
+ */
 export function validateBudgetInput(rawBudget) {
   const num = Number(rawBudget);
   if (!Number.isFinite(num) || num < 1000 || num > 100000000) {
@@ -24,6 +35,23 @@ export function validateBudgetInput(rawBudget) {
   return { valid: true, value: Math.round(num) };
 }
 
+/**
+ * Validates and sanitizes client event creation payload with field-level error mapping.
+ * @param {Record<string, unknown>} [payload={}]
+ * @returns {{
+ *   valid: boolean,
+ *   errors: string[],
+ *   fieldErrors: Record<string, string>,
+ *   sanitized?: {
+ *     eventType: 'wedding' | 'birthday' | 'community',
+ *     eventName: string,
+ *     budget: number,
+ *     guestCount: number,
+ *     eventDate: string,
+ *     preferences: string
+ *   }
+ * }}
+ */
 export function validateEventRequest(payload = {}) {
   const errors = [];
   const fieldErrors = {};
@@ -82,6 +110,20 @@ export function validateEventRequest(payload = {}) {
   };
 }
 
+/**
+ * Validates that an AI-generated JSON response matches the expected schema and sanitizes all fields.
+ * @param {unknown} data
+ * @returns {{
+ *   valid: boolean,
+ *   plan?: {
+ *     summary: string,
+ *     personalizedIdeas: Array<{title: string, category: string, description: string}>,
+ *     budgetBreakdown: Array<{category: string, percentage: number, notes: string}>,
+ *     timeline: Array<{phase: string, timeframe: string, task: string}>,
+ *     vendors: Array<{name: string, category: string, priority: 'High'|'Medium'|'Low', tip: string}>
+ *   }
+ * }}
+ */
 export function validateAIPlanSchema(data) {
   if (!data || typeof data !== 'object') {
     return { valid: false };

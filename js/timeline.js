@@ -5,6 +5,30 @@
 import { sanitizeText } from './security.js';
 import { DEFAULT_TIMELINES } from './data/default-data.js';
 
+/**
+ * @typedef {object} Milestone
+ * @property {string} id - Unique identifier for the milestone
+ * @property {string} phase - Project phase name (e.g. Foundation, Core Vendors)
+ * @property {string} timeframe - Relative or absolute target timeframe
+ * @property {string} task - Description of the milestone task
+ * @property {string} eventDate - Target celebration date
+ * @property {boolean} completed - Whether the milestone is done
+ */
+
+/**
+ * @typedef {object} TimelineProgress
+ * @property {number} total - Total milestones count
+ * @property {number} done - Count of completed milestones
+ * @property {number} percent - Percentage completed (0-100)
+ */
+
+/**
+ * Builds milestone schedule from custom breakdown or default templates.
+ * @param {'wedding' | 'birthday' | 'community'} [eventType='wedding'] - Celebration type
+ * @param {string} [eventDate=''] - Target date string
+ * @param {Array<{phase?: string, timeframe?: string, task?: string, completed?: boolean}>} [customTimeline=[]]
+ * @returns {Milestone[]}
+ */
 export function buildTimelineSchedule(eventType = 'wedding', eventDate = '', customTimeline = []) {
   const source =
     Array.isArray(customTimeline) && customTimeline.length > 0
@@ -21,6 +45,12 @@ export function buildTimelineSchedule(eventType = 'wedding', eventDate = '', cus
   }));
 }
 
+/**
+ * Calculates remaining calendar days between reference date and event date string.
+ * @param {string} eventDateString - ISO date string (YYYY-MM-DD)
+ * @param {Date} [referenceDate=new Date()] - Reference date
+ * @returns {number} Non-negative integer count of days remaining
+ */
 export function calculateDaysRemaining(eventDateString, referenceDate = new Date()) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(eventDateString))) {
     return 0;
@@ -38,16 +68,19 @@ export function calculateDaysRemaining(eventDateString, referenceDate = new Date
 }
 
 /**
- * Toggles a milestone's completed flag (immutable).
- * @param {Array<Record<string, any>>} items
- * @param {string} id
+ * Toggles a milestone's completed flag immutably.
+ * @param {Milestone[]} [items=[]] - Current milestones list
+ * @param {string} id - Milestone id to toggle
+ * @returns {Milestone[]} Updated milestones array
  */
 export function toggleMilestone(items = [], id) {
   return items.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item));
 }
 
 /**
- * @param {Array<{completed?: boolean}>} items
+ * Calculates completion progress statistics for the milestone schedule.
+ * @param {Array<{completed?: boolean}>} [items=[]] - Milestones list
+ * @returns {TimelineProgress}
  */
 export function getTimelineProgress(items = []) {
   const total = items.length;

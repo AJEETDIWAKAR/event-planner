@@ -4,6 +4,7 @@
  */
 
 /**
+ * Creates a rate limiter instance.
  * @param {{ limit?: number, windowMs?: number, maxKeys?: number, now?: () => number }} [options]
  * @returns {{ check: (key: string) => { allowed: boolean, remaining: number, retryAfterSec: number } }}
  */

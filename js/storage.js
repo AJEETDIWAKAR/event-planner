@@ -2,8 +2,13 @@
  * Safe local persistence layer for saving and restoring non-sensitive event plans.
  */
 
-const STORAGE_KEY = 'celebration_event_planner_state_v1';
+export const STORAGE_KEY = 'celebration_event_planner_state_v1';
 
+/**
+ * Saves plan state to browser localStorage safely.
+ * @param {object} state - Application state object
+ * @returns {boolean} True if successfully persisted, false otherwise
+ */
 export function savePlanState(state) {
   try {
     if (typeof localStorage === 'undefined' || !state || typeof state !== 'object') {
@@ -26,6 +31,10 @@ export function savePlanState(state) {
   }
 }
 
+/**
+ * Loads saved plan state from localStorage.
+ * @returns {object | null} Restored state or null if not found/invalid
+ */
 export function loadPlanState() {
   try {
     if (typeof localStorage === 'undefined') {
@@ -42,6 +51,10 @@ export function loadPlanState() {
   }
 }
 
+/**
+ * Clears saved plan state from localStorage.
+ * @returns {boolean} True if successfully removed
+ */
 export function clearPlanState() {
   try {
     if (typeof localStorage !== 'undefined') {
