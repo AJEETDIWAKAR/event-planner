@@ -3,16 +3,18 @@
  *
  * Security: API key stays server-side, input is validated and sanitized, requests are
  * rate limited and size capped, the model output is schema-validated before returning.
- * Efficiency: identical requests are served from a small TTL cache; upstream has a timeout.
+ * Efficiency: identical requests are served from a TTL cache; upstream has a timeout.
+ * Both the cache and rate-limiter use a swappable interface so distributed stores
+ * (e.g. Upstash Redis) can be plugged in without touching handler logic.
  */
 
 import { validateEventRequest, validateAIPlanSchema } from '../js/security.js';
 import { createRateLimiter } from '../js/rate-limit.js';
 
-const MAX_BODY_CHARS = 4000;
-const CACHE_TTL_MS = 10 * 60 * 1000;
-const CACHE_MAX = 50;
-const UPSTREAM_TIMEOUT_MS = 15_000;
+export const MAX_BODY_CHARS = 4000;
+export const CACHE_TTL_MS = 10 * 60 * 1000;
+export const CACHE_MAX = 50;
+export const UPSTREAM_TIMEOUT_MS = 15_000;
 
 /**
  * Builds the model prompt. User data is passed as a JSON string and marked as data only.
@@ -30,32 +32,122 @@ export function buildPrompt(input) {
 }
 
 /**
- * @param {{ fetchImpl?: typeof fetch, env?: Record<string, string | undefined>, now?: () => number }} [deps]
+ * In-memory LRU TTL cache store implementing the swappable CacheStore interface.
+ */
+export class MemoryCacheStore {
+  /**
+   * @param {{ max?: number, now?: () => number }} [options]
+   */
+  constructor({ max = CACHE_MAX, now = Date.now } = {}) {
+    this.max = max;
+    this.now = now;
+    this.map = new Map();
+  }
+
+  async get(key) {
+    const hit = this.map.get(key);
+    if (hit && hit.expires > this.now()) {
+      return hit.plan;
+    }
+    this.map.delete(key);
+    return null;
+  }
+
+  async set(key, plan, ttlMs = CACHE_TTL_MS) {
+    if (this.map.size >= this.max) {
+      this.map.delete(this.map.keys().next().value);
+    }
+    this.map.set(key, { plan, expires: this.now() + ttlMs });
+  }
+
+  clear() {
+    this.map.clear();
+  }
+}
+
+/**
+ * Optional Upstash Redis REST adapter factory (zero dependencies, uses native fetch).
+ * Plug into createHandler({ cacheStore, rateLimiter }) when deploying across multiple serverless instances.
+ * @param {{ url: string, token: string, fetchImpl?: typeof fetch }} options
+ */
+export function createUpstashStores({ url, token, fetchImpl = globalThis.fetch }) {
+  const cacheStore = {
+    async get(key) {
+      try {
+        const res = await fetchImpl(`${url}/get/${encodeURIComponent(`cache:${key}`)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.result ? JSON.parse(data.result) : null;
+      } catch {
+        return null;
+      }
+    },
+    async set(key, plan, ttlMs = CACHE_TTL_MS) {
+      try {
+        const sec = Math.ceil(ttlMs / 1000);
+        await fetchImpl(
+          `${url}/set/${encodeURIComponent(`cache:${key}`)}/${encodeURIComponent(JSON.stringify(plan))}?ex=${sec}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch {
+        // fail-open
+      }
+    },
+  };
+
+  const rateLimiter = {
+    async check(key) {
+      try {
+        const redisKey = `ratelimit:${key}`;
+        const res = await fetchImpl(`${url}/pipeline`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify([
+            ['INCR', redisKey],
+            ['TTL', redisKey],
+          ]),
+        });
+        if (!res.ok) return { allowed: true, remaining: 10, retryAfterSec: 0 };
+        const results = await res.json();
+        const count = Number(results[0]?.result) || 1;
+        let ttl = Number(results[1]?.result) || 60;
+        if (ttl === -1) {
+          await fetchImpl(`${url}/expire/${encodeURIComponent(redisKey)}/60`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          ttl = 60;
+        }
+        if (count > 10) {
+          return { allowed: false, remaining: 0, retryAfterSec: Math.max(1, ttl) };
+        }
+        return { allowed: true, remaining: Math.max(0, 10 - count), retryAfterSec: 0 };
+      } catch {
+        return { allowed: true, remaining: 10, retryAfterSec: 0 };
+      }
+    },
+  };
+
+  return { cacheStore, rateLimiter };
+}
+
+/**
+ * @param {{
+ *   fetchImpl?: typeof fetch,
+ *   env?: Record<string, string | undefined>,
+ *   now?: () => number,
+ *   cacheStore?: { get: (k: string) => Promise<any> | any, set: (k: string, v: any, ttl?: number) => Promise<void> | void },
+ *   rateLimiter?: { check: (k: string) => Promise<{ allowed: boolean, remaining: number, retryAfterSec: number }> | { allowed: boolean, remaining: number, retryAfterSec: number } }
+ * }} [deps]
  */
 export function createHandler({
   fetchImpl = globalThis.fetch,
   env = process.env,
   now = Date.now,
+  cacheStore = new MemoryCacheStore({ now }),
+  rateLimiter = createRateLimiter({ limit: 10, windowMs: 60_000, now }),
 } = {}) {
-  const limiter = createRateLimiter({ limit: 10, windowMs: 60_000, now });
-  const cache = new Map();
-
-  function getCached(key) {
-    const hit = cache.get(key);
-    if (hit && hit.expires > now()) {
-      return hit.plan;
-    }
-    cache.delete(key);
-    return null;
-  }
-
-  function setCached(key, plan) {
-    if (cache.size >= CACHE_MAX) {
-      cache.delete(cache.keys().next().value);
-    }
-    cache.set(key, { plan, expires: now() + CACHE_TTL_MS });
-  }
-
   return async function handler(req, res) {
     res.setHeader?.('Cache-Control', 'no-store');
     if (req.method !== 'POST') {
@@ -72,7 +164,7 @@ export function createHandler({
       .split(',')[0]
       .trim();
     const clientKey = forwarded || req.socket?.remoteAddress || 'unknown';
-    const rate = limiter.check(clientKey);
+    const rate = await rateLimiter.check(clientKey);
     if (!rate.allowed) {
       res.setHeader?.('Retry-After', String(rate.retryAfterSec));
       return res.status(429).json({ error: 'Too many requests. Please retry shortly.' });
@@ -89,7 +181,7 @@ export function createHandler({
     }
 
     const cacheKey = JSON.stringify(check.sanitized);
-    const cached = getCached(cacheKey);
+    const cached = await cacheStore.get(cacheKey);
     if (cached) {
       return res.status(200).json(cached);
     }
@@ -116,7 +208,7 @@ export function createHandler({
       if (!parsed.valid) {
         return res.status(502).json({ error: 'AI returned an unusable plan' });
       }
-      setCached(cacheKey, parsed.plan);
+      await cacheStore.set(cacheKey, parsed.plan, CACHE_TTL_MS);
       return res.status(200).json(parsed.plan);
     } catch {
       return res.status(502).json({ error: 'AI generation failed' });

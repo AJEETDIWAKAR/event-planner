@@ -32,6 +32,23 @@ GenAI-powered planning assistant for **weddings, birthdays and community events*
 
 Zero runtime dependencies, 10-minute response cache for identical requests, upstream and client timeouts, bounded in-memory structures.
 
+## Known Limitations & Distributed Scaling
+
+- **Per-instance memory in serverless**: In serverless environments like Vercel, memory is not shared across isolated function instances or cold starts. The default in-memory cache and rate limiter protect each instance independently, but an attacker distributing traffic across many concurrent lambda containers could bypass a local limit.
+- **Pluggable Shared Store Interface**: To scale to a distributed shared cache and rate limiter, `api/generate-plan.js` exposes clean `CacheStore` and `RateLimiter` interfaces:
+  ```javascript
+  import { createHandler, createUpstashStores } from './api/generate-plan.js';
+
+  // Plug in Upstash Redis or any Redis-compatible store (zero dependencies using fetch):
+  const { cacheStore, rateLimiter } = createUpstashStores({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+
+  export default createHandler({ cacheStore, rateLimiter });
+  ```
+- **Gemini API & Serverless execution**: Upstream Gemini requests are subject to network latency and are bounded by an explicit 15-second timeout (`AbortSignal.timeout(15000)`). If the external AI service times out, rate limits, or is unconfigured, the app falls back immediately and deterministically to the built-in template engine with zero user disruption.
+
 ## Accessibility
 
 Semantic landmarks, skip link, labelled controls, `aria-live` status regions, focus moved to errors, visible focus rings, `<progress>` instead of styled divs, keyboard-only operable, dark mode and `prefers-reduced-motion` support.
