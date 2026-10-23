@@ -3,7 +3,7 @@
  * Fully WCAG 2.2 AA compliant with explicit aria error association, focus management, and keyboard support.
  */
 
-import { generateEventPlan } from './ai-service.js';
+import { generateEventPlan, regenerateEventIdeas } from './ai-service.js';
 import { buildBudgetAllocation, updateBudgetSpent } from './budget.js';
 import { buildTimelineSchedule, calculateDaysRemaining, toggleMilestone } from './timeline.js';
 import { buildVendorChecklist, addCustomVendor, updateVendorStatus } from './checklist.js';
@@ -12,16 +12,20 @@ import { renderBudget } from './ui/budget-view.js';
 import { renderTimeline } from './ui/timeline-view.js';
 import { renderVendors } from './ui/vendors-view.js';
 import { renderIdeas } from './ui/ideas-view.js';
+import { exportPlanAsTextFile, printPlan } from './ui/export-view.js';
 
 const FORM_FIELDS = ['eventType', 'eventName', 'budget', 'guestCount', 'eventDate', 'preferences'];
 
 /**
  * Creates and initializes the celebration event planner application instance.
  * @param {Document} [doc]
- * @param {{ fetchImpl?: typeof fetch }} [options]
+ * @param {{ fetchImpl?: typeof fetch, printImpl?: () => boolean, urlImpl?: typeof URL }} [options]
  * @returns {object} Application instance and state
  */
-export function createApp(doc = globalThis.document, { fetchImpl = globalThis.fetch } = {}) {
+export function createApp(
+  doc = globalThis.document,
+  { fetchImpl = globalThis.fetch, printImpl = null, urlImpl = globalThis.URL } = {}
+) {
   const $ = (id) => doc.getElementById(id);
 
   const elements = {
@@ -29,6 +33,9 @@ export function createApp(doc = globalThis.document, { fetchImpl = globalThis.fe
     vendorForm: $('vendor-form'),
     submitBtn: $('submit-btn'),
     resetBtn: $('reset-btn'),
+    regenIdeasBtn: $('regen-ideas-btn'),
+    printPlanBtn: $('print-plan-btn'),
+    exportTxtBtn: $('export-txt-btn'),
     errors: $('errors'),
     results: $('results'),
     summary: $('summary'),
@@ -218,6 +225,20 @@ export function createApp(doc = globalThis.document, { fetchImpl = globalThis.fe
     render();
   }
 
+  async function handleRegenerateIdeas() {
+    if (!state.eventDetails || !elements.regenIdeasBtn) return;
+    elements.regenIdeasBtn.disabled = true;
+    elements.regenIdeasBtn.textContent = 'Regenerating...';
+
+    const freshIdeas = await regenerateEventIdeas(state.eventDetails, fetchImpl);
+    state.ideas = freshIdeas;
+    persist();
+    renderIdeas(elements.ideas, state.ideas);
+
+    elements.regenIdeasBtn.disabled = false;
+    elements.regenIdeasBtn.textContent = 'Regenerate ideas only';
+  }
+
   function handleVendorSubmit(e) {
     e.preventDefault();
     const input = elements.vName;
@@ -265,6 +286,18 @@ export function createApp(doc = globalThis.document, { fetchImpl = globalThis.fe
     }
   }
 
+  function handlePrint() {
+    if (typeof printImpl === 'function') {
+      printImpl();
+    } else {
+      printPlan(doc.defaultView || globalThis.window);
+    }
+  }
+
+  function handleExportTxt() {
+    exportPlanAsTextFile(state, doc, urlImpl);
+  }
+
   // Clear per-field error when user edits the field
   FORM_FIELDS.forEach((field) => {
     const input = $(field);
@@ -298,6 +331,15 @@ export function createApp(doc = globalThis.document, { fetchImpl = globalThis.fe
   }
   if (elements.resetBtn) {
     elements.resetBtn.addEventListener('click', handleReset);
+  }
+  if (elements.regenIdeasBtn) {
+    elements.regenIdeasBtn.addEventListener('click', handleRegenerateIdeas);
+  }
+  if (elements.printPlanBtn) {
+    elements.printPlanBtn.addEventListener('click', handlePrint);
+  }
+  if (elements.exportTxtBtn) {
+    elements.exportTxtBtn.addEventListener('click', handleExportTxt);
   }
 
   const saved = loadPlanState();

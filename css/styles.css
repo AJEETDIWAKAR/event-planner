@@ -172,6 +172,25 @@ progress {
   font-size: 0.85rem;
 }
 
+.actions-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.section-header h2 {
+  margin: 0;
+}
+
 [hidden] {
   display: none !important;
 }
@@ -192,6 +211,43 @@ progress {
   width: 1.2rem;
   height: 1.2rem;
   margin-top: 0.2rem;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  .skip,
+  header,
+  footer,
+  #plan-form,
+  #vendor-form,
+  .actions-row,
+  #regen-ideas-btn,
+  #errors {
+    display: none !important;
+  }
+
+  #results {
+    display: block !important;
+  }
+
+  .card,
+  .cards li,
+  .budget-row {
+    border: 1px solid #cccccc !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    background: #ffffff !important;
+  }
+
+  progress,
+  select,
+  input[type='number'] {
+    display: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

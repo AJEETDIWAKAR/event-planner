@@ -419,3 +419,116 @@ test('custom vendor input accessibility validation', () => {
   assert.equal(vName.getAttribute('aria-invalid'), null);
   assert.equal(vError.textContent, '');
 });
+
+test('regenerate ideas only button updates ideas without clearing budget or vendors', async () => {
+  const dom = setupDom();
+  let isRegen = false;
+  const mockFetch = async () => {
+    if (isRegen) {
+      return {
+        ok: true,
+        json: async () => ({
+          summary: 'Updated Plan',
+          personalizedIdeas: [
+            {
+              title: 'Brand New Laser Entry',
+              category: 'Theme',
+              description: 'Laser show',
+            },
+          ],
+        }),
+      };
+    }
+    return {
+      ok: true,
+      json: async () => ({
+        summary: 'Initial Plan',
+        personalizedIdeas: [{ title: 'Old Idea', category: 'Decor', description: 'Old desc' }],
+      }),
+    };
+  };
+
+  createApp(dom.window.document, { fetchImpl: mockFetch });
+
+  dom.window.document.getElementById('eventType').value = 'wedding';
+  dom.window.document.getElementById('eventName').value = 'Priya & Raj';
+  dom.window.document.getElementById('budget').value = '300000';
+  dom.window.document.getElementById('guestCount').value = '100';
+  dom.window.document.getElementById('eventDate').value = '2027-10-25';
+
+  dom.window.document
+    .getElementById('plan-form')
+    .dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  await new Promise((r) => setTimeout(r, 20));
+
+  // Update budget spent on first category
+  const spentInput = dom.window.document.getElementById('spent-budget-1');
+  spentInput.value = '55000';
+  spentInput.dispatchEvent(new dom.window.Event('change'));
+
+  // Mark first vendor as Booked
+  const statusSelect = dom.window.document.querySelector('#vendors select');
+  statusSelect.value = 'Booked';
+  statusSelect.dispatchEvent(new dom.window.Event('change'));
+
+  assert.match(dom.window.document.getElementById('ideas').children[0].textContent, /Old Idea/);
+
+  // Now trigger Regenerate Ideas Only
+  isRegen = true;
+  const regenBtn = dom.window.document.getElementById('regen-ideas-btn');
+  regenBtn.dispatchEvent(new dom.window.Event('click'));
+  await new Promise((r) => setTimeout(r, 25));
+
+  // Verify new idea is rendered
+  assert.notEqual(dom.window.document.getElementById('ideas').children[0].textContent, 'Old Idea');
+
+  // Verify budget spent is STILL preserved!
+  const currentSpent = dom.window.document.getElementById('spent-budget-1');
+  assert.equal(currentSpent.value, '55000');
+
+  // Verify vendor status is STILL preserved!
+  const currentStatus = dom.window.document.querySelector('#vendors select');
+  assert.equal(currentStatus.value, 'Booked');
+});
+
+test('print and export buttons trigger actions in UI', async () => {
+  const dom = setupDom();
+  let printed = false;
+  let downloaded = false;
+
+  const mockURL = {
+    createObjectURL() {
+      downloaded = true;
+      return 'blob:mock-url';
+    },
+    revokeObjectURL() {},
+  };
+
+  createApp(dom.window.document, {
+    fetchImpl: async () => ({ ok: false, status: 500 }),
+    printImpl: () => {
+      printed = true;
+      return true;
+    },
+    urlImpl: mockURL,
+  });
+
+  dom.window.document.getElementById('eventType').value = 'birthday';
+  dom.window.document.getElementById('eventName').value = 'Export Test';
+  dom.window.document.getElementById('budget').value = '20000';
+  dom.window.document.getElementById('guestCount').value = '25';
+  dom.window.document.getElementById('eventDate').value = '2027-08-15';
+
+  dom.window.document
+    .getElementById('plan-form')
+    .dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  await new Promise((r) => setTimeout(r, 20));
+
+  // Click print button
+  dom.window.document.getElementById('print-plan-btn').dispatchEvent(new dom.window.Event('click'));
+  assert.equal(printed, true);
+
+  // Click export txt button
+  dom.window.document.getElementById('export-txt-btn').dispatchEvent(new dom.window.Event('click'));
+  assert.equal(downloaded, true);
+});

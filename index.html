@@ -78,13 +78,22 @@
       </section>
 
       <div id="results" hidden>
+        <div class="actions-row">
+          <button type="button" id="print-plan-btn" class="secondary">Print / Save as PDF</button>
+          <button type="button" id="export-txt-btn" class="secondary">Export as .txt</button>
+        </div>
         <section aria-labelledby="sum-h">
           <h2 id="sum-h">Overview</h2>
           <p id="summary"></p>
           <p id="meta" class="muted"></p>
         </section>
         <section aria-labelledby="ideas-h">
-          <h2 id="ideas-h">Personalized ideas</h2>
+          <div class="section-header">
+            <h2 id="ideas-h">Personalized ideas</h2>
+            <button type="button" id="regen-ideas-btn" class="secondary">
+              Regenerate ideas only
+            </button>
+          </div>
           <ul id="ideas" class="cards"></ul>
         </section>
         <section aria-labelledby="bud-h">

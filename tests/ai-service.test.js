@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateEventPlan } from '../js/ai-service.js';
+import {
+  generateEventPlan,
+  generateDeterministicIdeas,
+  regenerateEventIdeas,
+  generateDeterministicFallbackPlan,
+} from '../js/ai-service.js';
 
 const input = {
   eventType: 'birthday',
@@ -15,6 +20,7 @@ test('invalid input returns errors', async () => {
   const r = await generateEventPlan({});
   assert.equal(r.ok, false);
   assert.ok(r.errors.length > 0);
+  assert.ok(r.fieldErrors);
 });
 
 test('falls back when API fails', async () => {
@@ -47,4 +53,47 @@ test('falls back on invalid AI schema', async () => {
     json: async () => ({ foo: 1 }),
   }));
   assert.equal(r.plan.source, 'demo-fallback');
+});
+
+test('generateDeterministicIdeas provides diverse tailored ideas', () => {
+  const weddingIdeas1 = generateDeterministicIdeas({ ...input, eventType: 'wedding' }, 0);
+  const weddingIdeas2 = generateDeterministicIdeas({ ...input, eventType: 'wedding' }, 2);
+
+  assert.equal(weddingIdeas1.length, 4);
+  assert.equal(weddingIdeas2.length, 4);
+  // Rotated offset produces different starting item
+  assert.notEqual(weddingIdeas1[0].title, weddingIdeas2[0].title);
+});
+
+test('regenerateEventIdeas uses AI response if valid', async () => {
+  const freshIdeas = [
+    { title: 'New Laser Show', category: 'Entertainment', description: '30-minute light setup' },
+  ];
+  const mockFetch = async () => ({
+    ok: true,
+    json: async () => ({
+      summary: 'Updated',
+      personalizedIdeas: freshIdeas,
+    }),
+  });
+
+  const ideas = await regenerateEventIdeas(input, mockFetch);
+  assert.equal(ideas.length, 1);
+  assert.equal(ideas[0].title, 'New Laser Show');
+});
+
+test('regenerateEventIdeas falls back deterministically when API fails', async () => {
+  const failingFetch = async () => ({ ok: false, status: 500 });
+  const ideas = await regenerateEventIdeas(input, failingFetch);
+
+  assert.ok(ideas.length >= 3);
+  assert.ok(ideas[0].title);
+});
+
+test('generateDeterministicFallbackPlan structures complete plan without API key', () => {
+  const fallback = generateDeterministicFallbackPlan(input);
+  assert.equal(fallback.source, 'demo-fallback');
+  assert.ok(fallback.budgetBreakdown.length > 0);
+  assert.ok(fallback.timeline.length > 0);
+  assert.ok(fallback.vendors.length > 0);
 });
