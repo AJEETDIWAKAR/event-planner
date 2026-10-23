@@ -1,8 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sanitizeText, validateBudgetInput, validateEventRequest, validateAIPlanSchema } from '../js/security.js';
+import {
+  sanitizeText,
+  validateBudgetInput,
+  validateEventRequest,
+  validateAIPlanSchema,
+} from '../js/security.js';
 
-const good = { eventType: 'Wedding', eventName: 'Riya & Aman', budget: '500000', guestCount: 200, eventDate: '2027-02-14', preferences: 'Royal theme' };
+const good = {
+  eventType: 'Wedding',
+  eventName: 'Riya & Aman',
+  budget: '500000',
+  guestCount: 200,
+  eventDate: '2027-02-14',
+  preferences: 'Royal theme',
+};
 
 test('sanitizeText strips tags and control chars', () => {
   assert.equal(sanitizeText('<script>hi</script>\u0000 ok '), 'scripthi/script ok');
@@ -24,7 +36,13 @@ test('validateEventRequest accepts valid payload and normalizes type', () => {
 });
 
 test('validateEventRequest collects errors', () => {
-  const r = validateEventRequest({ eventType: 'x', eventName: 'a', budget: 1, guestCount: 1, eventDate: 'bad' });
+  const r = validateEventRequest({
+    eventType: 'x',
+    eventName: 'a',
+    budget: 1,
+    guestCount: 1,
+    eventDate: 'bad',
+  });
   assert.equal(r.valid, false);
   assert.equal(r.errors.length, 5);
 });

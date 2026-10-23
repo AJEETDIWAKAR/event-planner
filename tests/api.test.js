@@ -2,20 +2,45 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHandler, buildPrompt } from '../api/generate-plan.js';
 
-const body = { eventType: 'wedding', eventName: 'Test Wedding', budget: 300000, guestCount: 120, eventDate: '2027-02-01', preferences: 'veg' };
+const body = {
+  eventType: 'wedding',
+  eventName: 'Test Wedding',
+  budget: 300000,
+  guestCount: 120,
+  eventDate: '2027-02-01',
+  preferences: 'veg',
+};
 
 function mockRes() {
   return {
-    statusCode: 0, payload: null, headers: {},
-    setHeader(k, v) { this.headers[k] = v; },
-    status(c) { this.statusCode = c; return this; },
-    json(o) { this.payload = o; return this; },
+    statusCode: 0,
+    payload: null,
+    headers: {},
+    setHeader(k, v) {
+      this.headers[k] = v;
+    },
+    status(c) {
+      this.statusCode = c;
+      return this;
+    },
+    json(o) {
+      this.payload = o;
+      return this;
+    },
   };
 }
-const aiPlan = { summary: 'Plan', personalizedIdeas: [{ title: 'T', category: 'C', description: 'D' }] };
+const aiPlan = {
+  summary: 'Plan',
+  personalizedIdeas: [{ title: 'T', category: 'C', description: 'D' }],
+};
 const okFetch = (calls) => async () => {
   calls.n += 1;
-  return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(aiPlan) }] } }] }) };
+  return {
+    ok: true,
+    json: async () => ({
+      candidates: [{ content: { parts: [{ text: JSON.stringify(aiPlan) }] } }],
+    }),
+  };
 };
 
 test('rejects non-POST', async () => {
@@ -26,7 +51,10 @@ test('rejects non-POST', async () => {
 
 test('rejects invalid input with 400', async () => {
   const res = mockRes();
-  await createHandler({ env: { GEMINI_API_KEY: 'k' } })({ method: 'POST', body: { eventType: 'x' } }, res);
+  await createHandler({ env: { GEMINI_API_KEY: 'k' } })(
+    { method: 'POST', body: { eventType: 'x' } },
+    res
+  );
   assert.equal(res.statusCode, 400);
 });
 
@@ -38,7 +66,10 @@ test('503 when API key missing', async () => {
 
 test('413 on oversized payload', async () => {
   const res = mockRes();
-  await createHandler({ env: { GEMINI_API_KEY: 'k' } })({ method: 'POST', body: { ...body, junk: 'x'.repeat(5000) } }, res);
+  await createHandler({ env: { GEMINI_API_KEY: 'k' } })(
+    { method: 'POST', body: { ...body, junk: 'x'.repeat(5000) } },
+    res
+  );
   assert.equal(res.statusCode, 413);
 });
 
@@ -56,13 +87,19 @@ test('returns validated plan and caches identical requests', async () => {
 });
 
 test('502 on upstream failure or unusable AI output', async () => {
-  const bad = createHandler({ env: { GEMINI_API_KEY: 'k' }, fetchImpl: async () => ({ ok: false }) });
+  const bad = createHandler({
+    env: { GEMINI_API_KEY: 'k' },
+    fetchImpl: async () => ({ ok: false }),
+  });
   const r1 = mockRes();
   await bad({ method: 'POST', body, headers: {} }, r1);
   assert.equal(r1.statusCode, 502);
   const junk = createHandler({
     env: { GEMINI_API_KEY: 'k' },
-    fetchImpl: async () => ({ ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: '{"x":1}' }] } }] }) }),
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({ candidates: [{ content: { parts: [{ text: '{"x":1}' }] } }] }),
+    }),
   });
   const r2 = mockRes();
   await junk({ method: 'POST', body, headers: {} }, r2);

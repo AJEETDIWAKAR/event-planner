@@ -7,7 +7,12 @@
  * @param {{ limit?: number, windowMs?: number, maxKeys?: number, now?: () => number }} [options]
  * @returns {{ check: (key: string) => { allowed: boolean, remaining: number, retryAfterSec: number } }}
  */
-export function createRateLimiter({ limit = 10, windowMs = 60_000, maxKeys = 5000, now = Date.now } = {}) {
+export function createRateLimiter({
+  limit = 10,
+  windowMs = 60_000,
+  maxKeys = 5000,
+  now = Date.now,
+} = {}) {
   const hits = new Map();
 
   function prune(t) {
@@ -35,7 +40,11 @@ export function createRateLimiter({ limit = 10, windowMs = 60_000, maxKeys = 500
       }
       entry.count += 1;
       if (entry.count > limit) {
-        return { allowed: false, remaining: 0, retryAfterSec: Math.ceil((entry.resetAt - t) / 1000) };
+        return {
+          allowed: false,
+          remaining: 0,
+          retryAfterSec: Math.ceil((entry.resetAt - t) / 1000),
+        };
       }
       return { allowed: true, remaining: limit - entry.count, retryAfterSec: 0 };
     },

@@ -5,17 +5,31 @@ import { buildBudgetAllocation, calculateBudgetSummary, updateBudgetSpent } from
 test('default allocations sum exactly to total and 100%', () => {
   for (const type of ['wedding', 'birthday', 'community']) {
     const items = buildBudgetAllocation(123457, type);
-    assert.equal(items.reduce((a, i) => a + i.allocated, 0), 123457);
-    assert.equal(items.reduce((a, i) => a + i.percentage, 0), 100);
+    assert.equal(
+      items.reduce((a, i) => a + i.allocated, 0),
+      123457
+    );
+    assert.equal(
+      items.reduce((a, i) => a + i.percentage, 0),
+      100
+    );
   }
 });
 
 test('custom breakdown with odd percentages still sums to 100', () => {
   const items = buildBudgetAllocation(100000, 'wedding', [
-    { category: 'A', percentage: 33 }, { category: 'B', percentage: 33 }, { category: 'C', percentage: 33 },
+    { category: 'A', percentage: 33 },
+    { category: 'B', percentage: 33 },
+    { category: 'C', percentage: 33 },
   ]);
-  assert.equal(items.reduce((a, i) => a + i.percentage, 0), 100);
-  assert.equal(items.reduce((a, i) => a + i.allocated, 0), 100000);
+  assert.equal(
+    items.reduce((a, i) => a + i.percentage, 0),
+    100
+  );
+  assert.equal(
+    items.reduce((a, i) => a + i.allocated, 0),
+    100000
+  );
 });
 
 test('summary and spent update', () => {

@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildVendorChecklist, addCustomVendor, updateVendorStatus, getChecklistProgress } from '../js/checklist.js';
+import {
+  buildVendorChecklist,
+  addCustomVendor,
+  updateVendorStatus,
+  getChecklistProgress,
+} from '../js/checklist.js';
 
 test('checklist build, add, update, progress', () => {
   let list = buildVendorChecklist('wedding');

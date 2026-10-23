@@ -59,7 +59,14 @@ export function validateEventRequest(payload = {}) {
   return {
     valid: true,
     errors: [],
-    sanitized: { eventType, eventName, budget: budgetCheck.value, guestCount, eventDate, preferences },
+    sanitized: {
+      eventType,
+      eventName,
+      budget: budgetCheck.value,
+      guestCount,
+      eventDate,
+      preferences,
+    },
   };
 }
 

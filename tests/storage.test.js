@@ -12,7 +12,10 @@ beforeEach(() => {
 });
 
 test('save, load and clear round trip', () => {
-  assert.equal(savePlanState({ eventDetails: { eventName: 'A' }, summary: 'hi', vendors: [1] }), true);
+  assert.equal(
+    savePlanState({ eventDetails: { eventName: 'A' }, summary: 'hi', vendors: [1] }),
+    true
+  );
   const loaded = loadPlanState();
   assert.equal(loaded.summary, 'hi');
   assert.deepEqual(loaded.vendors, [1]);
@@ -27,6 +30,10 @@ test('rejects bad state and survives corrupt data', () => {
 });
 
 test('save returns false when storage throws', () => {
-  globalThis.localStorage = { setItem() { throw new Error('quota'); } };
+  globalThis.localStorage = {
+    setItem() {
+      throw new Error('quota');
+    },
+  };
   assert.equal(savePlanState({}), false);
 });

@@ -3,31 +3,7 @@
  */
 
 import { sanitizeText } from './security.js';
-
-const DEFAULT_SPLITS = {
-  wedding: [
-    { category: 'Venue & Catering', percentage: 45, notes: 'Includes banquet hall and per-plate menu' },
-    { category: 'Photography & Videography', percentage: 15, notes: 'Pre-event shoot and main coverage' },
-    { category: 'Decor, Floral & Lighting', percentage: 15, notes: 'Stage setup and entrance theme' },
-    { category: 'Attire, Makeup & Styling', percentage: 10, notes: 'Bridal/Groom outfits and artists' },
-    { category: 'Entertainment & Music', percentage: 8, notes: 'DJ, sound system, and live performers' },
-    { category: 'Emergency Buffer & Misc', percentage: 7, notes: 'Last-minute logistics and tips' },
-  ],
-  birthday: [
-    { category: 'Venue & Food/Catering', percentage: 40, notes: 'Buffet, snacks, and beverage station' },
-    { category: 'Custom Cake & Desserts', percentage: 15, notes: 'Theme centerpiece cake and dessert bar' },
-    { category: 'Theme Decor & Balloons', percentage: 18, notes: 'Backdrop, photo booth, and table setup' },
-    { category: 'Entertainment & Games', percentage: 15, notes: 'Host, DJ, or activity stations' },
-    { category: 'Return Gifts & Invites', percentage: 12, notes: 'Personalized party favors for guests' },
-  ],
-  community: [
-    { category: 'Venue, Tent & Seating', percentage: 35, notes: 'Ground booking, stage, and chairs' },
-    { category: 'Refreshments & Water', percentage: 25, notes: 'Hygienic food stalls and hydration points' },
-    { category: 'Sound, AV & Lighting', percentage: 18, notes: 'PA system, microphones, and banners' },
-    { category: 'Permits, Safety & First Aid', percentage: 12, notes: 'Local permissions, security, and medical kit' },
-    { category: 'Outreach & Volunteer Kits', percentage: 10, notes: 'Posters, badges, and sanitation supplies' },
-  ],
-};
+import { DEFAULT_SPLITS } from './data/default-data.js';
 
 /**
  * Builds budget items. Percentages are normalized and the rounding remainder goes
@@ -40,7 +16,8 @@ export function buildBudgetAllocation(totalBudget, eventType = 'wedding', custom
       ? customBreakdown
       : DEFAULT_SPLITS[eventType] || DEFAULT_SPLITS.wedding;
 
-  const totalPercent = template.reduce((sum, item) => sum + (Number(item.percentage) || 10), 0) || 100;
+  const totalPercent =
+    template.reduce((sum, item) => sum + (Number(item.percentage) || 10), 0) || 100;
 
   let percentUsed = 0;
   let allocatedUsed = 0;
@@ -49,7 +26,9 @@ export function buildBudgetAllocation(totalBudget, eventType = 'wedding', custom
     const percentage = isLast
       ? 100 - percentUsed
       : Math.round(((Number(item.percentage) || 10) / totalPercent) * 100);
-    const allocated = isLast ? safeTotal - allocatedUsed : Math.round((safeTotal * percentage) / 100);
+    const allocated = isLast
+      ? safeTotal - allocatedUsed
+      : Math.round((safeTotal * percentage) / 100);
     percentUsed += percentage;
     allocatedUsed += allocated;
     return {

@@ -32,7 +32,11 @@ export function buildPrompt(input) {
 /**
  * @param {{ fetchImpl?: typeof fetch, env?: Record<string, string | undefined>, now?: () => number }} [deps]
  */
-export function createHandler({ fetchImpl = globalThis.fetch, env = process.env, now = Date.now } = {}) {
+export function createHandler({
+  fetchImpl = globalThis.fetch,
+  env = process.env,
+  now = Date.now,
+} = {}) {
   const limiter = createRateLimiter({ limit: 10, windowMs: 60_000, now });
   const cache = new Map();
 
@@ -64,7 +68,9 @@ export function createHandler({ fetchImpl = globalThis.fetch, env = process.env,
       return res.status(413).json({ error: 'Payload too large' });
     }
 
-    const forwarded = String(req.headers?.['x-forwarded-for'] || '').split(',')[0].trim();
+    const forwarded = String(req.headers?.['x-forwarded-for'] || '')
+      .split(',')[0]
+      .trim();
     const clientKey = forwarded || req.socket?.remoteAddress || 'unknown';
     const rate = limiter.check(clientKey);
     if (!rate.allowed) {

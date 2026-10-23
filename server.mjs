@@ -33,10 +33,18 @@ http
       };
       return handler({ method: req.method, body: parsed }, r);
     }
-    const rel = req.url === '/' ? 'index.html' : decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '');
+    const rel =
+      req.url === '/'
+        ? 'index.html'
+        : decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '');
     const file = path.resolve(rel);
     const ext = path.extname(file);
-    if (!file.startsWith(process.cwd()) || !TYPES[ext] || rel.startsWith('tests') || !fs.existsSync(file)) {
+    if (
+      !file.startsWith(process.cwd()) ||
+      !TYPES[ext] ||
+      rel.startsWith('tests') ||
+      !fs.existsSync(file)
+    ) {
       res.statusCode = 404;
       return res.end('Not found');
     }
