@@ -26,39 +26,51 @@ export function validateBudgetInput(rawBudget) {
 
 export function validateEventRequest(payload = {}) {
   const errors = [];
+  const fieldErrors = {};
+
   const eventType = sanitizeText(payload.eventType, 30).toLowerCase();
   if (!ALLOWED_EVENT_TYPES.includes(eventType)) {
-    errors.push('Invalid event type. Choose wedding, birthday, or community.');
+    const msg = 'Invalid event type. Choose wedding, birthday, or community.';
+    errors.push(msg);
+    fieldErrors.eventType = msg;
   }
 
   const eventName = sanitizeText(payload.eventName, 100);
   if (eventName.length < 2) {
-    errors.push('Event name must be at least 2 characters long.');
+    const msg = 'Event name must be at least 2 characters long.';
+    errors.push(msg);
+    fieldErrors.eventName = msg;
   }
 
   const budgetCheck = validateBudgetInput(payload.budget);
   if (!budgetCheck.valid) {
     errors.push(budgetCheck.error);
+    fieldErrors.budget = budgetCheck.error;
   }
 
   const guestCount = Number(payload.guestCount);
   if (!Number.isInteger(guestCount) || guestCount < 5 || guestCount > 50000) {
-    errors.push('Guest count must be an integer between 5 and 50,000.');
+    const msg = 'Guest count must be an integer between 5 and 50,000.';
+    errors.push(msg);
+    fieldErrors.guestCount = msg;
   }
 
   const eventDate = sanitizeText(payload.eventDate, 20);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) {
-    errors.push('Event date must follow YYYY-MM-DD format.');
+    const msg = 'Event date must follow YYYY-MM-DD format.';
+    errors.push(msg);
+    fieldErrors.eventDate = msg;
   }
 
   const preferences = sanitizeText(payload.preferences || '', 300);
 
   if (errors.length > 0) {
-    return { valid: false, errors };
+    return { valid: false, errors, fieldErrors };
   }
   return {
     valid: true,
     errors: [],
+    fieldErrors: {},
     sanitized: {
       eventType,
       eventName,

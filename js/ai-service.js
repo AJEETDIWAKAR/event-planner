@@ -119,7 +119,7 @@ export function generateDeterministicFallbackPlan(sanitizedInput) {
 export async function generateEventPlan(rawInput, fetchImpl = globalThis.fetch) {
   const check = validateEventRequest(rawInput);
   if (!check.valid) {
-    return { ok: false, errors: check.errors };
+    return { ok: false, errors: check.errors, fieldErrors: check.fieldErrors };
   }
   const input = check.sanitized;
 

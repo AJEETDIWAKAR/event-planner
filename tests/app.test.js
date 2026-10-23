@@ -358,3 +358,64 @@ test('restores saved plan from storage on initial load', () => {
     /1 of 1 vendors booked/
   );
 });
+
+test('per-field accessibility: aria-invalid, aria-describedby, message and focus', async () => {
+  const dom = setupDom();
+  createApp(dom.window.document);
+
+  const form = dom.window.document.getElementById('plan-form');
+  const nameInput = dom.window.document.getElementById('eventName');
+  const budgetInput = dom.window.document.getElementById('budget');
+  const nameError = dom.window.document.getElementById('eventName-error');
+  const budgetError = dom.window.document.getElementById('budget-error');
+
+  // Set partial invalid input
+  nameInput.value = 'A'; // < 2 chars
+  budgetInput.value = '50'; // < 1000
+
+  form.dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  await new Promise((r) => setTimeout(r, 15));
+
+  // Verify aria-invalid and aria-describedby on invalid fields
+  assert.equal(nameInput.getAttribute('aria-invalid'), 'true');
+  assert.equal(nameInput.getAttribute('aria-describedby'), 'eventName-error');
+  assert.match(nameError.textContent, /at least 2 characters/i);
+
+  assert.equal(budgetInput.getAttribute('aria-invalid'), 'true');
+  assert.equal(budgetInput.getAttribute('aria-describedby'), 'budget-error');
+  assert.match(budgetError.textContent, /between 1,000 and/i);
+
+  // Focus was directed to first invalid field
+  assert.equal(dom.window.document.activeElement, nameInput);
+
+  // Typing in the field clears aria-invalid and error text
+  nameInput.value = 'Ananya Wedding';
+  nameInput.dispatchEvent(new dom.window.Event('input'));
+  assert.equal(nameInput.getAttribute('aria-invalid'), null);
+  assert.equal(nameInput.getAttribute('aria-describedby'), null);
+  assert.equal(nameError.textContent, '');
+});
+
+test('custom vendor input accessibility validation', () => {
+  const dom = setupDom();
+  createApp(dom.window.document);
+
+  dom.window.document.getElementById('results').hidden = false;
+  const vendorForm = dom.window.document.getElementById('vendor-form');
+  const vName = dom.window.document.getElementById('vName');
+  const vError = dom.window.document.getElementById('vName-error');
+
+  vName.value = ' ';
+  vendorForm.dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+
+  assert.equal(vName.getAttribute('aria-invalid'), 'true');
+  assert.equal(vName.getAttribute('aria-describedby'), 'vName-error');
+  assert.match(vError.textContent, /at least 2 characters/i);
+  assert.equal(dom.window.document.activeElement, vName);
+
+  // Typing clears error
+  vName.value = 'Florist';
+  vName.dispatchEvent(new dom.window.Event('input'));
+  assert.equal(vName.getAttribute('aria-invalid'), null);
+  assert.equal(vError.textContent, '');
+});

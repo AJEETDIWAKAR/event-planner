@@ -26,16 +26,51 @@
             <option value="birthday">Birthday</option>
             <option value="community">Community event</option>
           </select>
+          <span id="eventType-error" class="field-error" aria-live="polite"></span>
+
           <label for="eventName">Event name</label>
-          <input id="eventName" name="eventName" type="text" maxlength="100" required />
+          <input
+            id="eventName"
+            name="eventName"
+            type="text"
+            maxlength="100"
+            required
+            aria-required="true"
+          />
+          <span id="eventName-error" class="field-error" aria-live="polite"></span>
+
           <label for="budget">Total budget (INR)</label>
-          <input id="budget" name="budget" type="number" min="1000" step="1000" required />
+          <input
+            id="budget"
+            name="budget"
+            type="number"
+            min="1000"
+            step="1000"
+            required
+            aria-required="true"
+          />
+          <span id="budget-error" class="field-error" aria-live="polite"></span>
+
           <label for="guestCount">Guest count</label>
-          <input id="guestCount" name="guestCount" type="number" min="5" max="50000" required />
+          <input
+            id="guestCount"
+            name="guestCount"
+            type="number"
+            min="5"
+            max="50000"
+            required
+            aria-required="true"
+          />
+          <span id="guestCount-error" class="field-error" aria-live="polite"></span>
+
           <label for="eventDate">Event date</label>
-          <input id="eventDate" name="eventDate" type="date" required />
+          <input id="eventDate" name="eventDate" type="date" required aria-required="true" />
+          <span id="eventDate-error" class="field-error" aria-live="polite"></span>
+
           <label for="preferences">Preferences (theme, food, culture)</label>
           <textarea id="preferences" name="preferences" maxlength="300" rows="3"></textarea>
+          <span id="preferences-error" class="field-error" aria-live="polite"></span>
+
           <button type="submit" id="submit-btn">Generate plan</button>
           <button type="button" id="reset-btn" class="secondary">Clear saved plan</button>
         </form>
@@ -69,6 +104,7 @@
           <form id="vendor-form" novalidate>
             <label for="vName">Add custom vendor</label>
             <input id="vName" type="text" maxlength="70" />
+            <span id="vName-error" class="field-error" aria-live="polite"></span>
             <button type="submit">Add</button>
           </form>
         </section>
