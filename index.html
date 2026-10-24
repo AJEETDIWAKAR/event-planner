@@ -3,123 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Celebration Event Planner</title>
-    <meta
-      name="description"
-      content="Plan weddings, birthdays and community events with budgets, timelines and vendor checklists."
-    />
-    <link rel="stylesheet" href="css/styles.css" />
+    <title>Celebration Event Planner — AI-Powered Event Planning</title>
+    <meta name="description" content="Plan weddings, birthdays and community events with AI-powered budgets, timelines and vendor checklists." />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <a class="skip" href="#main">Skip to content</a>
-    <header>
-      <h1>Celebration Event Planner</h1>
-      <p>GenAI-assisted planning for weddings, birthdays and community events.</p>
-    </header>
-    <main id="main">
-      <section aria-labelledby="form-h">
-        <h2 id="form-h">Event details</h2>
-        <form id="plan-form" novalidate>
-          <label for="eventType">Event type</label>
-          <select id="eventType" name="eventType">
-            <option value="wedding">Wedding</option>
-            <option value="birthday">Birthday</option>
-            <option value="community">Community event</option>
-          </select>
-          <span id="eventType-error" class="field-error" aria-live="polite"></span>
-
-          <label for="eventName">Event name</label>
-          <input
-            id="eventName"
-            name="eventName"
-            type="text"
-            maxlength="100"
-            required
-            aria-required="true"
-          />
-          <span id="eventName-error" class="field-error" aria-live="polite"></span>
-
-          <label for="budget">Total budget (INR)</label>
-          <input
-            id="budget"
-            name="budget"
-            type="number"
-            min="1000"
-            step="1000"
-            required
-            aria-required="true"
-          />
-          <span id="budget-error" class="field-error" aria-live="polite"></span>
-
-          <label for="guestCount">Guest count</label>
-          <input
-            id="guestCount"
-            name="guestCount"
-            type="number"
-            min="5"
-            max="50000"
-            required
-            aria-required="true"
-          />
-          <span id="guestCount-error" class="field-error" aria-live="polite"></span>
-
-          <label for="eventDate">Event date</label>
-          <input id="eventDate" name="eventDate" type="date" required aria-required="true" />
-          <span id="eventDate-error" class="field-error" aria-live="polite"></span>
-
-          <label for="preferences">Preferences (theme, food, culture)</label>
-          <textarea id="preferences" name="preferences" maxlength="300" rows="3"></textarea>
-          <span id="preferences-error" class="field-error" aria-live="polite"></span>
-
-          <button type="submit" id="submit-btn">Generate plan</button>
-          <button type="button" id="reset-btn" class="secondary">Clear saved plan</button>
-        </form>
-        <div id="errors" role="alert" aria-live="assertive" tabindex="-1"></div>
-      </section>
-
-      <div id="results" hidden>
-        <div class="actions-row">
-          <button type="button" id="print-plan-btn" class="secondary">Print / Save as PDF</button>
-          <button type="button" id="export-txt-btn" class="secondary">Export as .txt</button>
-        </div>
-        <section aria-labelledby="sum-h">
-          <h2 id="sum-h">Overview</h2>
-          <p id="summary"></p>
-          <p id="meta" class="muted"></p>
-        </section>
-        <section aria-labelledby="ideas-h">
-          <div class="section-header">
-            <h2 id="ideas-h">Personalized ideas</h2>
-            <button type="button" id="regen-ideas-btn" class="secondary">
-              Regenerate ideas only
-            </button>
-          </div>
-          <ul id="ideas" class="cards"></ul>
-        </section>
-        <section aria-labelledby="bud-h">
-          <h2 id="bud-h">Budget tracker</h2>
-          <p id="budget-summary" aria-live="polite"></p>
-          <div id="budget-list"></div>
-        </section>
-        <section aria-labelledby="time-h">
-          <h2 id="time-h">Timeline</h2>
-          <p id="timeline-progress" aria-live="polite"></p>
-          <ol id="timeline"></ol>
-        </section>
-        <section aria-labelledby="ven-h">
-          <h2 id="ven-h">Vendor checklist</h2>
-          <p id="vendor-progress" aria-live="polite"></p>
-          <ul id="vendors" class="cards"></ul>
-          <form id="vendor-form" novalidate>
-            <label for="vName">Add custom vendor</label>
-            <input id="vName" type="text" maxlength="70" />
-            <span id="vName-error" class="field-error" aria-live="polite"></span>
-            <button type="submit">Add</button>
-          </form>
-        </section>
-      </div>
-    </main>
-    <footer><p>Plans are saved only in your browser.</p></footer>
-    <script type="module" src="js/app.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
